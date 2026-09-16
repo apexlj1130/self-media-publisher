@@ -27,7 +27,15 @@
 
 实现前阅读 `docs/product/需求规格.md`、`docs/功能设计.md`、`docs/技术架构设计.md` 和 `docs/quality/交付总计划.md`。
 
-预计验证命令将在实现计划中确定，至少包括：解析器聚焦测试、Skill 快速校验、样例文章离线演练和安装完整性检查。真实公众号草稿测试属于单独授权范围。
+常用验证命令：
+
+```bash
+python3 -m unittest discover -s outputs/wechat-article-publisher/tests -p 'test_*.py' -v
+python3 /Users/lee/.codex/skills/.system/skill-creator/scripts/quick_validate.py outputs/wechat-article-publisher
+python3 /Users/lee/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/lee/.codex/skills/wechat-article-publisher
+```
+
+真实公众号草稿测试属于单独授权范围。
 
 ## 完成标准
 
@@ -36,4 +44,3 @@
 - 样式预处理不会替代 Computer Use 最终复核。
 - 登录和发布安全闸门不能被跳过。
 - Skill 通过结构校验并安装为可发现的个人 Skill。
-

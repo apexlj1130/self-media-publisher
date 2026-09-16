@@ -1,0 +1,4 @@
+interface:
+  display_name: "微信公众号文章发布"
+  short_description: "用 Chrome 排版、复核并确认后发布公众号单篇图文"
+  default_prompt: "Use $wechat-article-publisher to prepare this article with AI-generated images and stop at preview for my confirmation."
