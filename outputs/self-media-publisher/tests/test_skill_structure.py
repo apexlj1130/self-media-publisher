@@ -81,6 +81,41 @@ class SkillStructureTest(unittest.TestCase):
             "测试夹具必须明确为合成内容",
         )
 
+    def test_skill_package_excludes_runtime_credentials_and_receipts(self):
+        forbidden_names = []
+        forbidden_secret_values = []
+        allowed_example_secret = "replace-outside-skill"
+
+        for path in SKILL_ROOT.rglob("*"):
+            if not path.is_file():
+                continue
+            relative = path.relative_to(SKILL_ROOT)
+            lower_name = path.name.lower()
+            if (
+                lower_name in {"wechat.yaml", "wechat-publisher.yaml"}
+                or "token-cache" in lower_name
+                or ("receipt" in lower_name and path.suffix.lower() == ".json")
+                or ("cookie" in lower_name and ".example." not in lower_name)
+            ):
+                forbidden_names.append(str(relative))
+
+            if path.suffix.lower() not in {".md", ".py", ".yaml", ".yml"}:
+                continue
+            text = path.read_text(encoding="utf-8")
+            for match in re.finditer(r"^\s*app_secret\s*:\s*(\S+)\s*$", text, re.MULTILINE):
+                value = match.group(1).strip("'\"")
+                if value != allowed_example_secret:
+                    forbidden_secret_values.append(f"{relative}:app_secret")
+            if re.search(r"(?i)^\s*cookie\s*:\s*\S+", text, re.MULTILINE):
+                forbidden_secret_values.append(f"{relative}:cookie")
+
+        self.assertEqual(forbidden_names, [], f"Skill 包含运行时文件：{forbidden_names}")
+        self.assertEqual(
+            forbidden_secret_values,
+            [],
+            f"Skill 包含非示例凭证值：{forbidden_secret_values}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

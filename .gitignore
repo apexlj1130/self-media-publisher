@@ -1,0 +1,8 @@
+work/
+__pycache__/
+*.py[cod]
+.DS_Store
+wechat.yaml
+wechat-publisher.yaml
+*token-cache*.json
+*receipt*.json

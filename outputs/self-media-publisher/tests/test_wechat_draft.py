@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_ROOT / "scripts" / "wechat_draft.py"
 SOURCE_SHA256 = "c" * 64
-APP_SECRET = "unit-test-secret-never-log"
+APP_SECRET = "replace-outside-skill"
 
 
 def load_module():
@@ -74,7 +74,7 @@ accounts:
   main:
     name: 测试公众号
     app_id: wx-unit-test
-    app_secret: unit-test-secret-never-log
+    app_secret: replace-outside-skill
     author: 测试作者
 """,
             encoding="utf-8",

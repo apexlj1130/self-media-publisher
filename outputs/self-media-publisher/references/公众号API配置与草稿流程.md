@@ -16,7 +16,7 @@ accounts:
   main:
     name: 公众号显示名
     app_id: your-app-id
-    app_secret: your-app-secret
+    app_secret: replace-outside-skill
     author: 作者名
 ```
 
