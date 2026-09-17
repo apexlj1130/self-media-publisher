@@ -1,0 +1,8 @@
+# 合成配置示例；不得填入真实凭证或加入运行时配置。
+default: main
+accounts:
+  main:
+    name: 示例公众号
+    app_id: wx-example
+    app_secret: replace-outside-skill
+    author: 示例作者
