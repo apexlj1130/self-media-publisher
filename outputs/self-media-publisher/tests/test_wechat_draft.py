@@ -267,6 +267,60 @@ accounts:
         self.assertEqual(client.get_access_token(), "eventual-token")
         self.assertEqual(len(transport.calls), 3)
 
+    def test_token_cache_is_invalidated_when_credentials_change(self):
+        module = load_module()
+        original_transport = FakeTransport(
+            [FakeResponse({"access_token": "old-token", "expires_in": 7200})]
+        )
+        original = module.WeChatDraftClient(
+            module.load_config(self.config_path),
+            transport=original_transport,
+            cache_path=self.cache_path,
+            sleep=lambda _: None,
+        )
+        self.assertEqual(original.get_access_token(), "old-token")
+
+        changed_config = module.WeChatConfig(
+            account_key="main",
+            account_name="测试公众号",
+            app_id="wx-unit-test",
+            app_secret="new-secret-after-reset",
+            author="测试作者",
+        )
+        changed_transport = FakeTransport(
+            [FakeResponse({"access_token": "new-token", "expires_in": 7200})]
+        )
+        changed = module.WeChatDraftClient(
+            changed_config,
+            transport=changed_transport,
+            cache_path=self.cache_path,
+            sleep=lambda _: None,
+        )
+
+        self.assertEqual(changed.get_access_token(), "new-token")
+        self.assertEqual(len(changed_transport.calls), 1)
+
+    def test_private_file_writer_does_not_chmod_existing_parent_directory(self):
+        module = load_module()
+        existing_parent = self.root / "shared-run-directory"
+        existing_parent.mkdir(mode=0o755)
+        os.chmod(existing_parent, 0o755)
+        cache_path = existing_parent / "token-cache.json"
+        transport = FakeTransport(
+            [FakeResponse({"access_token": "token-value", "expires_in": 7200})]
+        )
+        client = module.WeChatDraftClient(
+            module.load_config(self.config_path),
+            transport=transport,
+            cache_path=cache_path,
+            sleep=lambda _: None,
+        )
+
+        client.get_access_token()
+
+        self.assertEqual(stat.S_IMODE(existing_parent.stat().st_mode), 0o755)
+        self.assertEqual(stat.S_IMODE(cache_path.stat().st_mode), 0o600)
+
     def test_draft_create_5xx_is_not_retried_because_outcome_is_unknown(self):
         module = load_module()
         transport = FakeTransport(

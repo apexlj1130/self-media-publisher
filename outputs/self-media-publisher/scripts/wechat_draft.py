@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import mimetypes
@@ -100,11 +101,13 @@ def load_config(path: Path) -> WeChatConfig:
 
 def _write_private_json(path: Path, value: Mapping[str, Any]) -> None:
     path = path.expanduser().resolve()
+    parent_existed = path.parent.exists()
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    try:
-        os.chmod(path.parent, 0o700)
-    except OSError:
-        pass
+    if not parent_existed:
+        try:
+            os.chmod(path.parent, 0o700)
+        except OSError:
+            pass
     descriptor = os.open(
         str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600
     )
@@ -143,6 +146,10 @@ class WeChatDraftClient:
         self.retries = max(0, retries)
         self._token: Optional[str] = None
         self._expires_at = 0.0
+
+    def _credential_fingerprint(self) -> str:
+        material = f"{self.config.app_id}\0{self.config.app_secret}".encode("utf-8")
+        return hashlib.sha256(material).hexdigest()
 
     def _request_json(
         self,
@@ -215,6 +222,8 @@ class WeChatDraftClient:
             return None
         if value.get("account_key") != self.config.account_key:
             return None
+        if value.get("credential_fingerprint") != self._credential_fingerprint():
+            return None
         token = value.get("token")
         expires_at = value.get("expires_at")
         if (
@@ -256,6 +265,7 @@ class WeChatDraftClient:
             self.cache_path,
             {
                 "account_key": self.config.account_key,
+                "credential_fingerprint": self._credential_fingerprint(),
                 "token": token,
                 "expires_at": self._expires_at,
             },
