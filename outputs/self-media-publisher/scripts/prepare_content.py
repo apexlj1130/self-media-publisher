@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare a Markdown article for WeChat editing.
+"""Prepare one Markdown source for WeChat and Xiaohongshu publishing.
 
 The script performs deterministic parsing and renders a conservative staging
 document. It does not open a browser, generate images, or make publishing
@@ -183,8 +183,8 @@ def _make_anchor(
     }
 
 
-def parse_article(markdown: str) -> Dict[str, Any]:
-    """Parse the supported article format into a stable package mapping."""
+def parse_content(markdown: str) -> Dict[str, Any]:
+    """Parse the supported source format into a stable content package."""
 
     source = _normalise(markdown)
     lines = source.split("\n")
@@ -236,8 +236,9 @@ def parse_article(markdown: str) -> Dict[str, Any]:
         raise ParseError("发布与排版要求为空")
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "source_sha256": hashlib.sha256(source.encode("utf-8")).hexdigest(),
+        "default_platforms": ["wechat", "xiaohongshu"],
         "title": title,
         "body_markdown": body,
         "headings": headings,
@@ -387,7 +388,7 @@ def _render_blocks(body: str, images: Sequence[Mapping[str, Any]]) -> str:
     return "\n".join(rendered)
 
 
-def render_staging_html(package: Mapping[str, Any]) -> str:
+def render_wechat_staging_html(package: Mapping[str, Any]) -> str:
     """Render a browser-copyable staging document without the article H1."""
 
     article = _render_blocks(str(package["body_markdown"]), package["images"])
@@ -410,23 +411,25 @@ def render_staging_html(package: Mapping[str, Any]) -> str:
 """
 
 
-def write_package(source_path: Path, output_dir: Path) -> Tuple[Path, Path]:
-    """Write the JSON manifest and staging HTML for one source file."""
+def write_content_package(source_path: Path, output_dir: Path) -> Tuple[Path, Path]:
+    """Write the shared JSON package and WeChat staging HTML."""
 
     source_path = source_path.expanduser().resolve()
     output_dir = output_dir.expanduser().resolve()
     markdown = source_path.read_text(encoding="utf-8")
-    package = parse_article(markdown)
+    package = parse_content(markdown)
     output_dir.mkdir(parents=True, exist_ok=True)
-    json_path = output_dir / "article-package.json"
-    html_path = output_dir / "article-staging.html"
+    wechat_dir = output_dir / "wechat"
+    wechat_dir.mkdir(parents=True, exist_ok=True)
+    json_path = output_dir / "content-package.json"
+    html_path = wechat_dir / "article-staging.html"
     json_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    html_path.write_text(render_staging_html(package), encoding="utf-8")
+    html_path.write_text(render_wechat_staging_html(package), encoding="utf-8")
     return json_path, html_path
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="解析公众号文章并生成排版暂存稿")
+    parser = argparse.ArgumentParser(description="解析双平台素材并生成统一内容包")
     parser.add_argument("source", type=Path, help="UTF-8 Markdown 原稿")
     parser.add_argument("--output-dir", required=True, type=Path, help="运行输出目录")
     return parser
@@ -435,7 +438,7 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = _build_parser().parse_args(argv)
     try:
-        json_path, html_path = write_package(args.source, args.output_dir)
+        json_path, html_path = write_content_package(args.source, args.output_dir)
     except (OSError, UnicodeError, ParseError) as exc:
         print(f"准备文章失败：{exc}", file=sys.stderr)
         return 2

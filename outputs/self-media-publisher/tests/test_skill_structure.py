@@ -16,7 +16,7 @@ class SkillStructureTest(unittest.TestCase):
         required = [
             "SKILL.md",
             "agents/openai.yaml",
-            "scripts/prepare_article.py",
+            "scripts/prepare_content.py",
             "references/浏览器发布流程.md",
             "references/发布前复核清单.md",
         ]

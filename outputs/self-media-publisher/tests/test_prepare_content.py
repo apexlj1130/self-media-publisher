@@ -11,14 +11,14 @@ from pathlib import Path
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = SKILL_ROOT / "scripts" / "prepare_article.py"
+SCRIPT = SKILL_ROOT / "scripts" / "prepare_content.py"
 SAMPLE = Path(__file__).resolve().parent / "fixtures" / "示例文章.md"
 
 
-class PrepareArticleTest(unittest.TestCase):
+class PrepareContentTest(unittest.TestCase):
     def load_module(self):
-        self.assertTrue(SCRIPT.exists(), "prepare_article.py 尚未实现")
-        spec = importlib.util.spec_from_file_location("prepare_article", SCRIPT)
+        self.assertTrue(SCRIPT.exists(), "prepare_content.py 尚未实现")
+        spec = importlib.util.spec_from_file_location("prepare_content", SCRIPT)
         self.assertIsNotNone(spec)
         self.assertIsNotNone(spec.loader)
         module = importlib.util.module_from_spec(spec)
@@ -29,7 +29,7 @@ class PrepareArticleTest(unittest.TestCase):
     def parse_sample(self):
         module = self.load_module()
         markdown = SAMPLE.read_text(encoding="utf-8")
-        return module, module.parse_article(markdown)
+        return module, module.parse_content(markdown)
 
     def test_parses_sample_article_contract(self):
         _, package = self.parse_sample()
@@ -38,7 +38,8 @@ class PrepareArticleTest(unittest.TestCase):
             package["title"],
             "用于测试的 Agent 可观测性文章",
         )
-        self.assertEqual(package["schema_version"], 1)
+        self.assertEqual(package["schema_version"], 2)
+        self.assertEqual(package["default_platforms"], ["wechat", "xiaohongshu"])
         self.assertRegex(package["source_sha256"], r"^[0-9a-f]{64}$")
         self.assertEqual(len(package["images"]), 5)
         self.assertEqual(package["images"][0]["kind"], "cover")
@@ -59,7 +60,7 @@ class PrepareArticleTest(unittest.TestCase):
     def test_rejects_missing_illustration_section(self):
         module = self.load_module()
         with self.assertRaisesRegex(module.ParseError, "配图与插图建议"):
-            module.parse_article("# 标题\n\n正文")
+            module.parse_content("# 标题\n\n正文")
 
     def test_rejects_duplicate_image_number(self):
         module = self.load_module()
@@ -87,7 +88,7 @@ class PrepareArticleTest(unittest.TestCase):
 保持克制。
 """
         with self.assertRaisesRegex(module.ParseError, "重复"):
-            module.parse_article(markdown)
+            module.parse_content(markdown)
 
     def test_rejects_missing_prompt(self):
         module = self.load_module()
@@ -106,11 +107,11 @@ class PrepareArticleTest(unittest.TestCase):
 保持克制。
 """
         with self.assertRaisesRegex(module.ParseError, "提示词"):
-            module.parse_article(markdown)
+            module.parse_content(markdown)
 
     def test_renders_wechat_staging_html(self):
         module, package = self.parse_sample()
-        rendered = module.render_staging_html(package)
+        rendered = module.render_wechat_staging_html(package)
 
         self.assertIn('<article class="wechat-article">', rendered)
         self.assertNotIn("<h1", rendered)
@@ -123,14 +124,26 @@ class PrepareArticleTest(unittest.TestCase):
         self.assertIn("<blockquote", rendered)
         self.assertIn("需按语义复核位置", rendered)
 
+    def test_unordered_list_keeps_bullet_and_text_in_same_mobile_flow(self):
+        module, package = self.parse_sample()
+        rendered = module.render_wechat_staging_html(package)
+
+        self.assertIn(
+            '<ul style="margin:0 0 18px;padding-left:1.5em;"><li>工具调用；</li>',
+            rendered,
+        )
+        self.assertNotIn("display:inline-block", rendered)
+        self.assertNotRegex(rendered, r"<p[^>]*>\s*[•·]\s*</p>")
+
     def test_writes_package_and_cli_outputs(self):
         module = self.load_module()
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
-            json_path, html_path = module.write_package(SAMPLE, output_dir)
+            json_path, html_path = module.write_content_package(SAMPLE, output_dir)
 
-            self.assertEqual(json_path.name, "article-package.json")
+            self.assertEqual(json_path.name, "content-package.json")
             self.assertEqual(html_path.name, "article-staging.html")
+            self.assertEqual(html_path.parent.name, "wechat")
             self.assertTrue(json_path.exists())
             self.assertTrue(html_path.exists())
             package = json.loads(json_path.read_text(encoding="utf-8"))
