@@ -1,4 +1,4 @@
 interface:
-  display_name: "微信公众号文章发布"
-  short_description: "用 Chrome 排版、复核并确认后发布公众号单篇图文"
-  default_prompt: "Use $wechat-article-publisher to prepare this article with AI-generated images and stop at preview for my confirmation."
+  display_name: "公众号与小红书发布"
+  short_description: "AI 配图并准备公众号 API 草稿与小红书浏览器预览"
+  default_prompt: "Use $self-media-publisher to prepare this source for both WeChat and Xiaohongshu with AI-generated images, create only the drafts I authorize, and stop before publication for my confirmation."
