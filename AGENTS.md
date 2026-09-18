@@ -2,53 +2,49 @@
 
 ## 项目目标
 
-开发并验证个人 Codex Skill `self-media-publisher`。它默认把一份原始素材同时准备为微信公众号长文和小红书图文：公众号通过官方 API 创建草稿，小红书通过可见 Chrome Computer Use 填充和复核；任何正式发布都需要对应平台当前版本的明确确认。
+维护公开 Codex Skill `self-media-publisher`。它默认把一份 Markdown 素材同时准备为微信公众号长文和小红书图文：公众号通过官方 API 创建并回读草稿，小红书通过可见 Chrome 正常页面填充和复核。正式发布始终需要对应平台当前版本的明确确认。
 
-## 项目结构
+## 仓库结构
 
-- `README.md`：面向公开用户的安装、配置、首跑和故障排查入口。
-- `LICENSE`：项目 MIT 许可证。
-- `docs/product/需求规格.md`：稳定需求与验收标准。
-- `docs/功能设计.md`：用户流程、输入输出和双平台体验。
-- `docs/技术架构设计.md`：模块边界、数据契约和安全闸门。
-- `docs/决策记录.md`：关键产品与技术决策。
-- `docs/实施计划.md`：当前批准设计的唯一实施计划。
-- `docs/quality/交付总计划.md`：唯一进度看板和验证证据入口。
-- `outputs/self-media-publisher/`：最终可交付 Skill 包。
-- `work/`：真实运行素材和上游评估目录，不得加入交付提交。
+- `README.md`：公开安装、公众号配置、首次使用和故障排查入口。
+- `LICENSE`：MIT 许可证。
+- `outputs/self-media-publisher/`：Skill 的唯一源码和测试目录。
+- `outputs/self-media-publisher.tar.gz`：发布归档；重新发布时必须由当前源码生成并验证一致性。
+- `work/`：本地真实运行资料，不得加入 Git、Skill 或发布归档。
 
-## 工程约束
+## 架构与安全边界
 
-- 所有工作由主 Agent 完成，不使用子代理。
-- 默认同时准备公众号和小红书；当次明确指定单平台时可以缩小范围。
-- 所有平台图片均使用 Codex `imagegen`，不得使用 SVG、HTML/CSS 卡片或程序化制图替代。
-- 微信公众号只通过官方 API 创建草稿；凭证和 token 不进入 Git 或 Skill 包。
-- 小红书只使用可见 Chrome Computer Use，不安装高权限 XHS Bridge，不调用私有接口，不读取 Cookie，不使用 Headless、CDP、脚本注入或指纹伪装。
-- 解析脚本只生成候选结构和样式，不拥有小红书改编、图片质量或页面排版决定权。
-- 扫码、验证码、实名认证、原创资格和风险提示交由用户处理。
-- 两个平台分别绑定内容指纹和确认；没有当前版本确认时只能停在草稿或预览。
+- 默认同时准备 `wechat` 和 `xiaohongshu`；用户当次可明确缩小到单平台。
+- 所有平台图片均使用 Codex `imagegen`，不得用 SVG、HTML/CSS 卡片或程序化制图替代。
+- 微信公众号只通过官方 API 创建草稿；AppSecret、token、真实文章和运行收据不得进入 Git 或 Skill。
+- 小红书只使用可见 Chrome Computer Use，不使用私有接口、Cookie 导出、Headless、CDP、脚本注入、指纹伪装或高权限发布扩展。
+- 解析与校验脚本只负责确定性结构，不替模型决定语义改编、图片质量或真实页面排版。
+- 扫码、验证码、实名认证、原创资格、权利承诺和风险提示由用户处理。
+- 两个平台分别绑定内容指纹和确认；内容或设置变化后，对应平台旧确认立即失效。
 - 浏览器安全策略拒绝是硬停止，不得换工具绕过。
-- 离线测试不得登录真实平台、创建真实草稿或触发发布。
+- 外部写入结果不明时先回读或人工核对，不重复提交试探。
 
-## 开发与验证
+## 修改约定
 
-实现前阅读 `docs/product/需求规格.md`、`docs/功能设计.md`、`docs/技术架构设计.md`、`docs/实施计划.md` 和 `docs/quality/交付总计划.md`。
+- 只修改 `outputs/self-media-publisher/` 中的 Skill 源码，不把个人安装副本当作源文件。
+- 公共行为、依赖、配置路径或使用方式变化时，同步更新 `README.md` 和相关 `references/`。
+- 不把真实账号、真实原稿、图片、Cookie、token、配置文件或运行产物加入测试夹具。
+- 离线测试不得登录真实平台、创建真实草稿或触发正式发布。
+- 真实微信草稿、小红书页面填充或正式发布需要用户对当次操作的明确授权。
 
-常用验证命令：
+## 验证命令
 
 ```bash
 python3 -m unittest discover -s outputs/self-media-publisher/tests -p 'test_*.py' -v
-python3 /Users/lee/.codex/skills/.system/skill-creator/scripts/quick_validate.py outputs/self-media-publisher
-python3 /Users/lee/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/lee/.codex/skills/self-media-publisher
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" \
+  outputs/self-media-publisher
 ```
 
-真实微信 API 草稿和小红书浏览器草稿测试均需要单独授权。
+若更新发布归档，还需在临时目录解压后确认其内容与 `outputs/self-media-publisher/` 一致，并在解压副本中重跑上述验证。
 
 ## 完成标准
 
-- 原始来源、需求、实现、测试和交付状态在交付总计划中双向可追踪。
-- 统一内容包默认包含两个平台，且合成样例解析结果稳定。
-- 微信 API 适配器的 token、图片、草稿和回读边界有离线测试。
-- 小红书发布包校验和安全浏览器流程不包含高风险绕过能力。
-- 发布确认和防重复规则不能被脚本或旧确认绕过。
-- 精确归档和个人安装副本通过测试、结构校验与隐私扫描。
+- 完整离线测试和官方 Skill 快速校验通过。
+- README、Skill 和参考文件之间没有失效链接或相互矛盾的公开说明。
+- 凭证、真实内容、Cookie、token 和运行收据扫描无泄漏。
+- 发布确认、防重复写入和浏览器安全边界没有被弱化。

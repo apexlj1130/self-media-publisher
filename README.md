@@ -318,11 +318,8 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_
   outputs/self-media-publisher
 ```
 
-更多设计与安全边界：
+更多运行与安全边界：
 
-- [需求规格](docs/product/需求规格.md)
-- [功能设计](docs/功能设计.md)
-- [技术架构设计](docs/技术架构设计.md)
 - [开源项目与许可说明](outputs/self-media-publisher/references/开源项目与许可.md)
 - [双平台发布前复核清单](outputs/self-media-publisher/references/双平台发布前复核清单.md)
 
