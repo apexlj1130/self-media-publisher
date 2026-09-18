@@ -199,7 +199,11 @@ class WeChatDraftClient:
             if not 200 <= response.status_code < 300:
                 raise WeChatAPIError(f"微信接口返回 HTTP {response.status_code}")
             try:
-                payload = response.json()
+                raw_content = getattr(response, "content", None)
+                if isinstance(raw_content, bytes) and raw_content:
+                    payload = json.loads(raw_content.decode("utf-8-sig"))
+                else:
+                    payload = response.json()
             except (TypeError, ValueError) as exc:
                 raise WeChatAPIError("微信接口返回了无效 JSON") from exc
             if not isinstance(payload, Mapping):

@@ -35,9 +35,10 @@ def load_module():
 
 
 class FakeResponse:
-    def __init__(self, payload, status_code=200):
+    def __init__(self, payload, status_code=200, content=None):
         self.payload = payload
         self.status_code = status_code
+        self.content = content
 
     def json(self):
         return self.payload
@@ -266,6 +267,38 @@ accounts:
 
         self.assertEqual(client.get_access_token(), "eventual-token")
         self.assertEqual(len(transport.calls), 3)
+
+    def test_prefers_utf8_response_bytes_over_mojibake_response_json(self):
+        module = load_module()
+        correct_title = "开发传统软件和开发 Agent，到底有什么不一样？"
+        mojibake_title = correct_title.encode("utf-8").decode("latin-1")
+        raw_payload = {
+            "news_item": [{"title": correct_title, "content": "<p>正文</p>"}]
+        }
+        transport = FakeTransport(
+            [
+                FakeResponse(
+                    {
+                        "news_item": [
+                            {"title": mojibake_title, "content": "<p>æ­£æ</p>"}
+                        ]
+                    },
+                    content=json.dumps(raw_payload, ensure_ascii=False).encode("utf-8"),
+                )
+            ]
+        )
+        client = module.WeChatDraftClient(
+            module.load_config(self.config_path),
+            transport=transport,
+            cache_path=self.cache_path,
+            sleep=lambda _: None,
+        )
+        client._token = "cached-token"
+        client._expires_at = float("inf")
+
+        readback = client.get_draft("draft-media-id")
+
+        self.assertEqual(readback["news_item"][0]["title"], correct_title)
 
     def test_token_cache_is_invalidated_when_credentials_change(self):
         module = load_module()
